@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  honeypot:
+    build: .
+    image: honeypot:local
+    container_name: honeypot_local
+    ports:
+      - "127.0.0.1:8080:8080"   # bind to localhost only for safety
+      - "127.0.0.1:2222:2222"
+    volumes:
+      - ./logs:/app/logs     # persist logs to host
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # optional security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

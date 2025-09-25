@@ -1,9 +1,3 @@
-"""
-Simple offline log analyzer for honeypot_events.jsonl
-Produces summary counts and small heuristics useful for demo slides.
-This is intentionally simple and runs against the JSONL log file.
-"""
-
 import json
 from collections import Counter, defaultdict
 from honeypot.config import LOG_FILE
@@ -40,16 +34,33 @@ def summarize(events):
     methods = Counter()
     paths = Counter()
     durations = []
+    attack_indicators = Counter()
+    user_agents = Counter()
+    
     for e in events:
         if e.get("service") == "http":
             methods[e.get("method")] += 1
             paths[e.get("path")] += 1
+            
+            # Count attack indicators
+            indicators = e.get("attack_indicators", [])
+            for indicator in indicators:
+                attack_indicators[indicator] += 1
+            
+            # Count user agents
+            ua = e.get("headers", {}).get("User-Agent", "Unknown")
+            user_agents[ua] += 1
+            
         if e.get("service") == "ssh-like":
             if e.get("start_ts") and e.get("end_ts"):
                 durations.append(max(0, e["end_ts"] - e["start_ts"]))
 
     summary['http_methods'] = dict(methods)
     summary['http_paths'] = dict(paths)
+    summary['attack_indicators'] = dict(attack_indicators)
+    summary['top_user_agents'] = user_agents.most_common(10)
+    summary['total_attacks'] = sum(attack_indicators.values())
+    
     if durations:
         summary['ssh_session_count'] = len(durations)
         summary['ssh_session_avg'] = sum(durations) / len(durations)
@@ -63,22 +74,59 @@ def summarize(events):
 def print_report(limit=None):
     events = read_events(limit=limit)
     s = summarize(events)
-    print("=== Honeypot Analysis Report ===")
-    print(f"Total events: {s['total_events']}")
-    print("By service:")
+    print("=" * 60)
+    print("=== HONEYPOT ANALYSIS REPORT ===")
+    print("=" * 60)
+    print(f"Total events captured: {s['total_events']}")
+    print(f"Total attack indicators: {s['total_attacks']}")
+    print()
+    
+    print("📊 Events by Service:")
     for k,v in s['by_service'].items():
         print(f"  {k}: {v}")
-    print("Top peers:")
+    print()
+    
+    print("🌐 Top Source IPs:")
     for peer,count in s['top_peers']:
-        print(f"  {peer}: {count}")
-    print("HTTP methods:")
+        print(f"  {peer}: {count} requests")
+    print()
+    
+    print("🔍 HTTP Methods:")
     for m,c in s['http_methods'].items():
         print(f"  {m}: {c}")
-    print("Top HTTP paths (sample):")
+    print()
+    
+    print("📁 Top HTTP Paths (sample):")
     for p,c in sorted(s['http_paths'].items(), key=lambda x:-x[1])[:10]:
         print(f"  {p}: {c}")
+    print()
+    
+    if s['attack_indicators']:
+        print("⚠️  Attack Indicators Detected:")
+        for indicator, count in sorted(s['attack_indicators'].items(), key=lambda x:-x[1]):
+            print(f"  {indicator}: {count} attempts")
+        print()
+    
+    if s['top_user_agents']:
+        print("🤖 Top User Agents:")
+        for ua, count in s['top_user_agents'][:5]:
+            ua_short = ua[:50] + "..." if len(ua) > 50 else ua
+            print(f"  {ua_short}: {count}")
+        print()
+    
     if s['ssh_session_count']>0:
-        print(f"SSH sessions: {s['ssh_session_count']}  avg duration: {s['ssh_session_avg']:.2f}s  stddev: {s['ssh_session_stddev']:.2f}s")
+        print("🔐 SSH-like Sessions:")
+        print(f"  Sessions: {s['ssh_session_count']}")
+        print(f"  Avg duration: {s['ssh_session_avg']:.2f}s")
+        print(f"  Std deviation: {s['ssh_session_stddev']:.2f}s")
+        print()
+    
+    print("=" * 60)
+    if s['total_attacks'] > 0:
+        print(f"🚨 SUMMARY: Detected {s['total_attacks']} attack attempts from {len(s['top_peers'])} unique IPs")
+    else:
+        print("✅ No suspicious activity detected")
+    print("=" * 60)
 
 def main():
     parser = argparse.ArgumentParser(description="Offline analyzer for honeypot JSONL logs")

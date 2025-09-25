@@ -1,7 +1,6 @@
 """
 SSH-like TCP honeypot.
-Presents a fake SSH banner and logs raw transcript.
-This is intentionally low-interaction and does not implement the SSH protocol.
+Not implementting ssh real protocol 
 """
 
 import socket

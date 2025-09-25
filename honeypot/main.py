@@ -1,19 +1,16 @@
-"""
-Entry point for running all honeypot services.
-Starts HTTP and SSH-like services in background threads.
-"""
-
 import threading
 import signal
 import sys
 from honeypot.services.http_service import run_http_server
 from honeypot.services.ssh_service import run_ssh_like
+from honeypot.services.ftp_service import run_ftp_server
 
 def main():
     threads = []
     t_http = threading.Thread(target=run_http_server, kwargs={}, daemon=True)
     t_ssh  = threading.Thread(target=run_ssh_like, kwargs={}, daemon=True)
-    threads.extend([t_http, t_ssh])
+    t_ftp  = threading.Thread(target=run_ftp_server, kwargs={}, daemon=True)
+    threads.extend([t_http, t_ssh, t_ftp])
 
     for t in threads:
         t.start()

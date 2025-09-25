@@ -1,8 +1,3 @@
-"""
-Central logging utility. Writes JSON lines to LOG_FILE in config.
-Implements a simple rotation by file size.
-"""
-
 import json
 import datetime
 import os

@@ -13,6 +13,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 BIND_IP = "0.0.0.0"   # listens on all interfaces inside container/VM; in docker-compose we bind to localhost
 HTTP_PORT = 8080
 SSH_PORT = 2222
+FTP_PORT = 2121
 
 # Logging rotation (bytes). If None, uses simple append-only JSONL
 LOG_ROTATE_BYTES = 5 * 1024 * 1024  # 5 MB

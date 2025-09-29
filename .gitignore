@@ -50,3 +50,7 @@ logs/
 
 # Docker (runtime artifacts mounted or created locally)
 *.pid
+
+analysis/charts/
+
+security_dashboard.html

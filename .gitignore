@@ -52,5 +52,3 @@ logs/
 *.pid
 
 analysis/charts/
-
-security_dashboard.html

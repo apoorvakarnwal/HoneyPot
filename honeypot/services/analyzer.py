@@ -71,6 +71,137 @@ def summarize(events):
         summary['ssh_session_stddev'] = 0.0
     return summary
 
+def build_mitigation_advice(attack_summary: dict) -> dict:
+    """Map attack indicators to categories, severity, and mitigations."""
+    indicator_catalog = {
+        "sql_injection": {
+            "category": "Injection",
+            "severity": "high",
+            "mitigations": [
+                "Use parameterized queries and ORM bindings",
+                "Apply server-side input validation and encoding",
+                "Enforce least-privilege DB accounts",
+                "Deploy a WAF rule set for SQLi"
+            ]
+        },
+        "xss_attempt": {
+            "category": "Cross-Site Scripting",
+            "severity": "high",
+            "mitigations": [
+                "Context-aware output encoding",
+                "Set Content-Security-Policy",
+                "Sanitize user input and HTML",
+                "Use HttpOnly and SameSite cookies"
+            ]
+        },
+        "directory_traversal": {
+            "category": "Path Traversal",
+            "severity": "medium",
+            "mitigations": [
+                "Normalize and validate file paths",
+                "Disallow `..` and encoded variants",
+                "Serve files from whitelisted directories only"
+            ]
+        },
+        "lfi_attempt": {
+            "category": "Local File Inclusion",
+            "severity": "high",
+            "mitigations": [
+                "Disallow dynamic file includes from user input",
+                "Use allowlists for file access",
+                "Disable remote file wrappers"
+            ]
+        },
+        "malware_attempt": {
+            "category": "Webshell/Upload",
+            "severity": "high",
+            "mitigations": [
+                "Block dangerous file types and double extensions",
+                "Validate MIME and scan uploads",
+                "Store uploads outside webroot"
+            ]
+        },
+        "scanner_tool": {
+            "category": "Reconnaissance",
+            "severity": "low",
+            "mitigations": [
+                "Rate-limit suspicious clients",
+                "Honeypot tarpitting and deception",
+                "Block abusive IPs at edge/WAF"
+            ]
+        },
+        "command_injection": {
+            "category": "RCE/Command Injection",
+            "severity": "critical",
+            "mitigations": [
+                "Avoid shell invocation; use safe libraries",
+                "Strict input validation and allowlists",
+                "Escape shell arguments with subprocess APIs",
+                "Drop privileges and apply seccomp/AppArmor"
+            ]
+        },
+        "ssrf_attempt": {
+            "category": "SSRF",
+            "severity": "high",
+            "mitigations": [
+                "Block access to metadata/IP ranges (169.254.169.254, 127.0.0.1)",
+                "Use URL allowlists and DNS pinning",
+                "Force HTTP library to disallow redirects and non-HTTP schemes"
+            ]
+        },
+        "open_redirect": {
+            "category": "Open Redirect",
+            "severity": "medium",
+            "mitigations": [
+                "Validate redirect targets against allowlists",
+                "Use relative paths and signed tokens"
+            ]
+        },
+        "header_injection": {
+            "category": "Header Injection",
+            "severity": "medium",
+            "mitigations": [
+                "Strip CR/LF from inputs used in headers",
+                "Normalize and validate header values"
+            ]
+        },
+        "brute_force": {
+            "category": "Auth Brute Force",
+            "severity": "medium",
+            "mitigations": [
+                "Enforce login throttling and IP-based rate limits",
+                "Add CAPTCHA after failed attempts",
+                "Enable MFA on critical accounts"
+            ]
+        },
+    }
+
+    advice = {}
+    for indicator, count in attack_summary.items():
+        meta = indicator_catalog.get(indicator)
+        if not meta:
+            continue
+        advice[indicator] = {
+            "count": count,
+            "category": meta["category"],
+            "severity": meta["severity"],
+            "mitigations": meta["mitigations"],
+        }
+    return advice
+
+def print_advisory(events, limit=None):
+    s = summarize(events)
+    advice = build_mitigation_advice(s.get('attack_indicators', {}))
+    if not advice:
+        print("No attack indicators to advise on.")
+        return
+    print("=== ATTACK CLASSIFICATION & MITIGATION ADVICE ===")
+    for indicator, meta in sorted(advice.items(), key=lambda x: (x[1]['severity'], -x[1]['count'])):
+        print(f"- {indicator} | {meta['category']} | severity={meta['severity']} | count={meta['count']}")
+        for m in meta['mitigations']:
+            print(f"    * {m}")
+    print()
+
 def print_report(limit=None):
     events = read_events(limit=limit)
     s = summarize(events)
@@ -127,12 +258,19 @@ def print_report(limit=None):
     else:
         print("✅ No suspicious activity detected")
     print("=" * 60)
+    print()
+    print_advisory(events)
 
 def main():
     parser = argparse.ArgumentParser(description="Offline analyzer for honeypot JSONL logs")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of log lines to read")
+    parser.add_argument("--advice-only", action="store_true", help="Only show mitigation advice")
     args = parser.parse_args()
-    print_report(limit=args.limit)
+    if args.advice_only:
+        events = read_events(limit=args.limit)
+        print_advisory(events)
+    else:
+        print_report(limit=args.limit)
 
 if __name__ == "__main__":
     main()

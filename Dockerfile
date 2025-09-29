@@ -18,8 +18,8 @@ USER ${APP_USER}
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-EXPOSE 8080 2222 2121
+EXPOSE 8080 2222 2121 25 53 5123
 
 VOLUME ["/app/logs"]
 
-CMD ["python", "-m", "honeypot.main"]
+CMD ["python", "-m", "honeypot.simple_main"]

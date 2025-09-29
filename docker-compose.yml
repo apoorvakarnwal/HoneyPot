@@ -6,9 +6,12 @@ services:
     image: honeypot:local
     container_name: honeypot_local
     ports:
-      - "127.0.0.1:8080:8080"   # bind to localhost only for safety
-      - "127.0.0.1:2222:2222"
+      - "127.0.0.1:8080:8080"   # HTTP honeypot
+      - "127.0.0.1:2222:2222"   # SSH honeypot
       - "127.0.0.1:2121:2121"   # FTP honeypot
+      - "127.0.0.1:25:25"       # SMTP honeypot
+      - "127.0.0.1:53:53/udp"   # DNS honeypot
+      - "127.0.0.1:5123:5123"   # Web dashboard
     volumes:
       - ./logs:/app/logs     # persist logs to host
     restart: unless-stopped

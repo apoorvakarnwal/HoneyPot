@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍯 Honeypot Security Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        
+        .alert {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #b6d4ea;
+            color: #0c5460;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 4px;
+            margin: 0.125rem;
+        }
+        
+        .badge-danger { background: #dc3545; color: white; }
+        .badge-warning { background: #ffc107; color: #212529; }
+        .badge-info { background: #17a2b8; color: white; }
+        .badge-success { background: #28a745; color: white; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-healthy { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-error { background: #dc3545; }
+        
+        .wide-card {
+            grid-column: span 2;
+        }
+        
+        @media (max-width: 768px) {
+            .wide-card {
+                grid-column: span 1;
+            }
+            
+            .container {
+                padding: 1rem;
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .refresh-indicator {
+            float: right;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍯 Honeypot Security Dashboard</h1>
+        <div class="refresh-indicator">Last updated: <span id="lastUpdate">Loading...</span></div>
+    </div>
+    
+    <div class="container">
+        <!-- Real-time Statistics -->
+        <div class="card">
+            <h2>📊 Real-time Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalAttacks">-</div>
+                    <div class="stat-label">Attacks Today</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="activeSessions">-</div>
+                    <div class="stat-label">Active Sessions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="uniqueAttackers">-</div>
+                    <div class="stat-label">Unique IPs</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Health -->
+        <div class="card">
+            <h2>💻 System Health</h2>
+            <div id="systemHealth" class="loading">Loading system metrics...</div>
+        </div>
+        
+        <!-- Service Status -->
+        <div class="card">
+            <h2>🔧 Service Status</h2>
+            <div id="serviceStatus" class="loading">Loading service status...</div>
+        </div>
+        
+        <!-- Top Attack Types -->
+        <div class="card">
+            <h2>⚠️ Top Attack Types</h2>
+            <div id="topAttackTypes" class="loading">Loading attack data...</div>
+        </div>
+        
+        <!-- Attack Timeline Chart -->
+        <div class="card wide-card">
+            <h2>📈 Attack Timeline (24 Hours)</h2>
+            <div class="chart-container">
+                <canvas id="attackTimelineChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Recent Attacks -->
+        <div class="card wide-card">
+            <h2>🚨 Recent Attacks</h2>
+            <div id="recentAttacks" class="loading">Loading recent attacks...</div>
+        </div>
+        
+        <!-- Threat Intelligence -->
+        <div class="card">
+            <h2>🔍 Threat Intelligence</h2>
+            <div id="threatIntel" class="loading">Loading threat data...</div>
+        </div>
+        
+        <!-- Geographic Distribution -->
+        <div class="card">
+            <h2>🌍 Geographic Distribution</h2>
+            <div id="geoDistribution" class="loading">Loading geographic data...</div>
+        </div>
+    </div>
+    
+    <script>
+        let attackTimelineChart;
+        
+        function updateDashboard() {
+            // Update real-time stats
+            $.get('/api/stats', function(data) {
+                $('#totalAttacks').text(data.total_attacks_today || 0);
+                $('#activeSessions').text(data.active_sessions || 0);
+                $('#uniqueAttackers').text(Object.keys(data.geographic_distribution || {}).length);
+                
+                updateSystemHealth(data.system_health);
+                updateServiceStatus(data.service_status);
+                updateTopAttackTypes(data.top_attack_types);
+                updateAttackTimeline(data.attack_rate_per_hour);
+                
+                $('#lastUpdate').text(new Date().toLocaleTimeString());
+            }).fail(function() {
+                console.error('Failed to load stats');
+            });
+            
+            // Update recent attacks
+            $.get('/api/timeline?hours=1', function(data) {
+                updateRecentAttacks(data);
+            });
+            
+            // Update threat intelligence
+            $.get('/api/threats', function(data) {
+                updateThreatIntelligence(data);
+            });
+        }
+        
+        function updateSystemHealth(health) {
+            if (!health) {
+                $('#systemHealth').html('<div class="alert alert-warning">System metrics unavailable</div>');
+                return;
+            }
+            
+            const cpuStatus = health.cpu_percent > 80 ? 'danger' : (health.cpu_percent > 60 ? 'warning' : 'success');
+            const memStatus = health.memory_percent > 80 ? 'danger' : (health.memory_percent > 60 ? 'warning' : 'success');
+            
+            $('#systemHealth').html(`
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">${health.cpu_percent?.toFixed(1) || 0}%</div>
+                        <div class="stat-label">CPU Usage</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${health.memory_percent?.toFixed(1) || 0}%</div>
+                        <div class="stat-label">Memory Usage</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${health.uptime_hours?.toFixed(1) || 0}h</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+            `);
+        }
+        
+        function updateServiceStatus(services) {
+            if (!services || Object.keys(services).length === 0) {
+                $('#serviceStatus').html('<div class="alert alert-warning">No service data available</div>');
+                return;
+            }
+            
+            let html = '';
+            Object.entries(services).forEach(([name, service]) => {
+                const statusClass = service.status === 'healthy' ? 'status-healthy' : 
+                                  service.status === 'warning' ? 'status-warning' : 'status-error';
+                
+                html += `
+                    <div style="margin-bottom: 0.5rem;">
+                        <span class="status-indicator ${statusClass}"></span>
+                        <strong>${name}</strong> - ${service.requests_per_minute || 0} req/min, 
+                        ${service.active_connections || 0} active
+                    </div>
+                `;
+            });
+            
+            $('#serviceStatus').html(html);
+        }
+        
+        function updateTopAttackTypes(attackTypes) {
+            if (!attackTypes || attackTypes.length === 0) {
+                $('#topAttackTypes').html('<div class="alert alert-info">No attacks detected</div>');
+                return;
+            }
+            
+            let html = '';
+            attackTypes.slice(0, 5).forEach(attack => {
+                const severity = attack.count > 50 ? 'danger' : (attack.count > 20 ? 'warning' : 'info');
+                html += `
+                    <div style="margin-bottom: 0.5rem;">
+                        <span class="badge badge-${severity}">${attack.name}</span>
+                        <span style="float: right;">${attack.count}</span>
+                    </div>
+                `;
+            });
+            
+            $('#topAttackTypes').html(html);
+        }
+        
+        function updateAttackTimeline(hourlyData) {
+            const ctx = document.getElementById('attackTimelineChart').getContext('2d');
+            
+            if (attackTimelineChart) {
+                attackTimelineChart.destroy();
+            }
+            
+            const labels = [];
+            const data = [];
+            const now = new Date();
+            
+            for (let i = 23; i >= 0; i--) {
+                const hour = new Date(now.getTime() - i * 60 * 60 * 1000);
+                labels.push(hour.getHours() + ':00');
+                data.push((hourlyData && hourlyData[23 - i]) ? hourlyData[23 - i].attacks : 0);
+            }
+            
+            attackTimelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Attacks per Hour',
+                        data: data,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateRecentAttacks(attacks) {
+            if (!attacks || attacks.length === 0) {
+                $('#recentAttacks').html('<div class="alert alert-info">No recent attacks</div>');
+                return;
+            }
+            
+            let html = '<table class="table"><thead><tr><th>Time</th><th>Source</th><th>Service</th><th>Attack Types</th><th>Severity</th></tr></thead><tbody>';
+            
+            attacks.slice(0, 10).forEach(attack => {
+                const time = new Date(attack.timestamp).toLocaleTimeString();
+                const attackBadges = (attack.attack_types || []).map(type => 
+                    `<span class="badge badge-danger">${type}</span>`
+                ).join(' ');
+                const severityClass = attack.severity === 'critical' ? 'danger' : 
+                                    attack.severity === 'high' ? 'warning' : 'info';
+                
+                html += `
+                    <tr>
+                        <td>${time}</td>
+                        <td>${attack.source_ip}</td>
+                        <td>${attack.service}</td>
+                        <td>${attackBadges}</td>
+                        <td><span class="badge badge-${severityClass}">${attack.severity}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            $('#recentAttacks').html(html);
+        }
+        
+        function updateThreatIntelligence(threats) {
+            if (!threats || !threats.top_malicious_ips || threats.top_malicious_ips.length === 0) {
+                $('#threatIntel').html('<div class="alert alert-info">No threat data available</div>');
+                return;
+            }
+            
+            const riskClass = threats.risk_assessment === 'high' ? 'danger' : 
+                             threats.risk_assessment === 'medium' ? 'warning' : 'success';
+            
+            let html = `<div class="alert alert-${riskClass}">Risk Level: ${threats.risk_assessment.toUpperCase()}</div>`;
+            html += '<h4>Top Malicious IPs:</h4>';
+            
+            threats.top_malicious_ips.slice(0, 5).forEach(ip => {
+                html += `
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>${ip.ip}</strong> (${ip.country}) - 
+                        Score: ${ip.reputation_score}, Attacks: ${ip.attack_count}
+                    </div>
+                `;
+            });
+            
+            $('#threatIntel').html(html);
+        }
+        
+        // Initialize dashboard
+        $(document).ready(function() {
+            updateDashboard();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(updateDashboard, 30000);
+        });
+    </script>
+</body>
+</html>

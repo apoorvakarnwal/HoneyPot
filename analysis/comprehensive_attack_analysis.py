@@ -113,30 +113,89 @@ class ComprehensiveAttackAnalyzer:
         path = event.get('path', '').lower()
         method = event.get('method', '').upper()
         body = event.get('body', '').lower()
+        headers = event.get('headers', {})
+        attack_indicators = event.get('attack_indicators', [])
         
-        # SQL Injection patterns
-        if any(pattern in body for pattern in ['union select', 'or 1=1', 'drop table', 'information_schema']):
+        # Use attack indicators if available (from enhanced detection)
+        if attack_indicators:
+            primary_indicator = attack_indicators[0]  # Use the first/primary indicator
+            indicator_mapping = {
+                'sql_injection': 'sql_injection',
+                'xss_attempt': 'xss_attempt',
+                'directory_traversal': 'directory_traversal',
+                'malware_attempt': 'webshell_attempt',
+                'scanner_tool': 'automated_scanning',
+                'api_probe': 'api_attack',
+                'iot_exploit': 'iot_exploitation',
+                'evasion_technique': 'evasion_attempt',
+                'suspicious_headers': 'header_manipulation',
+                'jwt_manipulation': 'authentication_bypass',
+                'command_injection': 'command_injection',
+                'ldap_injection': 'ldap_injection',
+                'nosql_injection': 'nosql_injection'
+            }
+            return indicator_mapping.get(primary_indicator, 'advanced_attack')
+        
+        # Fallback to original classification logic
+        # Enhanced SQL Injection patterns
+        sql_patterns = ['union select', 'or 1=1', 'drop table', 'information_schema', 
+                       'union all select', 'concat(', 'group_concat(', 'waitfor delay']
+        if any(pattern in body or pattern in path for pattern in sql_patterns):
             return 'sql_injection'
         
-        # XSS patterns
-        if any(pattern in path + body for pattern in ['<script', 'alert(', 'javascript:', '<img']):
+        # Enhanced XSS patterns
+        xss_patterns = ['<script', 'alert(', 'javascript:', '<img', '<iframe', 
+                       '<object', '<embed', '<svg', 'onerror=', 'onload=']
+        if any(pattern in path + body for pattern in xss_patterns):
             return 'xss_attempt'
         
-        # Directory traversal
-        if any(pattern in path for pattern in ['../', '..\\', '%2e%2e']):
+        # Enhanced directory traversal
+        traversal_patterns = ['../', '..\\', '%2e%2e', '%252e%252e', '%c0%ae%c0%ae']
+        if any(pattern in path for pattern in traversal_patterns):
             return 'directory_traversal'
         
+        # API attack detection
+        api_patterns = ['/api/', '/graphql', '/swagger', '/openapi', '/actuator/', '/rest/api']
+        if any(pattern in path for pattern in api_patterns):
+            return 'api_attack'
+        
+        # IoT exploitation
+        iot_patterns = ['/cgi-bin/', '/goform/', '/web/cgi-bin/', '/setup/', '/upnp/']
+        if any(pattern in path for pattern in iot_patterns):
+            return 'iot_exploitation'
+        
+        # Command injection
+        cmd_patterns = ['; cat', '| cat', '& cat', '$(', '`', '&& cat']
+        if any(pattern in body or pattern in path for pattern in cmd_patterns):
+            return 'command_injection'
+        
         # Admin panel discovery
-        if any(pattern in path for pattern in ['/admin', '/administrator', '/wp-admin', '/phpmyadmin']):
+        admin_patterns = ['/admin', '/administrator', '/wp-admin', '/phpmyadmin', '/management']
+        if any(pattern in path for pattern in admin_patterns):
             return 'admin_discovery'
         
         # Config file discovery
-        if any(pattern in path for pattern in ['.env', 'config.php', 'wp-config', '.conf']):
+        config_patterns = ['.env', 'config.php', 'wp-config', '.conf', 'configuration.php']
+        if any(pattern in path for pattern in config_patterns):
             return 'config_discovery'
         
-        # Shell/webshell attempts
-        if any(pattern in path for pattern in ['shell.php', 'cmd.php', 'webshell', 'backdoor']):
+        # Advanced webshell attempts
+        shell_patterns = ['shell.php', 'cmd.php', 'webshell', 'backdoor', 'c99.php', 
+                         'r57.php', 'wso.php', 'b374k.php', 'shell.jsp', 'cmd.asp']
+        if any(pattern in path for pattern in shell_patterns):
             return 'webshell_attempt'
+        
+        # Evasion techniques
+        evasion_patterns = ['%00', '%0d%0a', '%252e', '%252f', '%c0%ae']
+        if any(pattern in path for pattern in evasion_patterns):
+            return 'evasion_attempt'
+        
+        # Scanner detection via User-Agent
+        user_agent = headers.get('User-Agent', '').lower()
+        scanner_agents = ['nmap', 'masscan', 'sqlmap', 'nikto', 'dirb', 'gobuster', 
+                         'metasploit', 'mirai-botnet', 'iot-scanner']
+        if any(agent in user_agent for agent in scanner_agents):
+            return 'automated_scanning'
         
         # Brute force login
         if method == 'POST' and '/login' in path:

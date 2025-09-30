@@ -106,6 +106,58 @@ class AdvancedThreatAnalyzer:
                 'name': 'Data Manipulation',
                 'patterns': ['drop', 'delete', 'truncate', 'alter'],
                 'methods': ['POST', 'GET']
+            },
+            
+            # Additional techniques for enhanced detection
+            'T1059': {
+                'name': 'Command and Scripting Interpreter',
+                'patterns': ['cmd.exe', 'powershell', 'bash', 'sh', '/bin/sh', 'python', 'perl', 'ruby'],
+                'methods': ['POST', 'GET']
+            },
+            'T1027': {
+                'name': 'Obfuscated Files or Information',
+                'patterns': ['base64', 'encode', '%2e%2e', '%252e', 'unicode', 'hex'],
+                'indicators': ['encoding', 'obfuscation']
+            },
+            'T1078': {
+                'name': 'Valid Accounts',
+                'patterns': ['admin', 'root', 'administrator', 'guest', 'default'],
+                'indicators': ['credential_access']
+            },
+            'T1021': {
+                'name': 'Remote Services',
+                'patterns': ['ssh', 'rdp', 'vnc', 'telnet', 'ftp'],
+                'ports': [21, 22, 23, 80, 443, 3389]
+            },
+            'T1548': {
+                'name': 'Abuse Elevation Control Mechanism',
+                'patterns': ['sudo', 'su', 'runas', 'uac', 'privilege'],
+                'indicators': ['privilege_escalation']
+            },
+            'T1203': {
+                'name': 'Exploitation for Client Execution',
+                'patterns': ['exploit', 'payload', 'shellcode', 'buffer', 'overflow'],
+                'indicators': ['exploitation']
+            },
+            'T1071': {
+                'name': 'Application Layer Protocol',
+                'patterns': ['http', 'https', 'dns', 'smtp', 'ftp'],
+                'indicators': ['protocol_abuse']
+            },
+            'T1095': {
+                'name': 'Non-Application Layer Protocol',
+                'patterns': ['tcp', 'udp', 'icmp', 'raw'],
+                'indicators': ['network_protocol']
+            },
+            'T1074': {
+                'name': 'Data Staged',
+                'patterns': ['stage', 'collect', 'gather', 'tmp', 'temp'],
+                'indicators': ['data_staging']
+            },
+            'T1041': {
+                'name': 'Exfiltration Over C2 Channel',
+                'patterns': ['exfil', 'upload', 'send', 'transmit'],
+                'indicators': ['data_exfiltration']
             }
         }
     

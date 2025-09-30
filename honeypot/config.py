@@ -15,6 +15,15 @@ HTTP_PORT = 8080
 SSH_PORT = 2222
 FTP_PORT = 2121
 
+# New service ports
+SMTP_PORT = 25
+SMTP_SUBMISSION_PORT = 587
+SMTP_SSL_PORT = 465
+MYSQL_PORT = 3306
+REDIS_PORT = 6379
+TELNET_PORT = 23
+VNC_PORT = 5900
+
 # Logging rotation (bytes). If None, uses simple append-only JSONL
 LOG_ROTATE_BYTES = 5 * 1024 * 1024  # 5 MB
 

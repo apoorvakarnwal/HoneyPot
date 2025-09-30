@@ -6,9 +6,14 @@ services:
     image: honeypot:local
     container_name: honeypot_local
     ports:
-      - "127.0.0.1:8080:8080"   # bind to localhost only for safety
-      - "127.0.0.1:2222:2222"
+      - "127.0.0.1:8080:8080"   # HTTP honeypot
+      - "127.0.0.1:2222:2222"   # SSH-like honeypot
       - "127.0.0.1:2121:2121"   # FTP honeypot
+      - "127.0.0.1:25:25"       # SMTP honeypot
+      - "127.0.0.1:13306:3306"  # MySQL honeypot (host remapped to avoid local conflict)
+      - "127.0.0.1:6379:6379"   # Redis honeypot
+      - "127.0.0.1:23:23"       # Telnet honeypot
+      - "127.0.0.1:5900:5900"   # VNC honeypot
     volumes:
       - ./logs:/app/logs     # persist logs to host
     restart: unless-stopped

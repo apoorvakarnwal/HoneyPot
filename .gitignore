@@ -52,3 +52,5 @@ logs/
 *.pid
 
 analysis/charts/
+
+threat_intelligence_report.txt
